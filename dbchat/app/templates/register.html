@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>REGISTER</title>
+</head>
+<body>
+  <h1>REGISTER</h1>
+  <form id="register-form">
+    <label>ID: <input type="text" id="username" /></label><br/>
+    <label>PASSWORD: <input type="password" id="password" /></label><br/>
+    <label>CONFIRM_PASSWORD: <input type="password" id="confirm_password" /></label><br/>
+    <label>Role: 
+      <select id="role">
+        <option value="">user</option>
+        <option value="moderator">moderator</option>
+        <option value="admin">admin</option>
+      </select>
+    </label><br/>
+    <button type="submit">submit</button>
+  </form>
+
+  <script>
+    document.getElementById('register-form')
+      .addEventListener('submit', async e => {
+        e.preventDefault();
+        const payload = {
+          username:         document.getElementById('username').value,
+          password:         document.getElementById('password').value,
+          confirm_password: document.getElementById('confirm_password').value,
+          role:             document.getElementById('role').value
+        };
+
+        const res = await fetch('/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (res.status === 201 && data.success) {
+          alert(data.message);
+          window.location.href = '/';
+        } else {
+          alert(data.message || 'error occurred during membership registration');
+        }
+      });
+  </script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Chat</title>
+  <style>
+    #chat-window { border:1px solid #ccc; height:300px; overflow:auto; padding:8px; }
+    .msg { margin:4px 0; }
+    .user { color: blue; }
+    .bot  { color: green; }
+  </style>
+</head>
+<body>
+  <h1>Admin Chat</h1>
+  <div id="chat-window"></div>
+  <form id="chat-form">
+    <input type="text" id="question" placeholder="what is age of Alice" autocomplete="off" style="width:70%;" />
+    <button type="submit">submit</button>
+  </form>
+
+  <script>
+    const form = document.getElementById('chat-form');
+    const chatWindow = document.getElementById('chat-window');
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const q = document.getElementById('question').value.trim();
+      if (!q) return;
+      const userP = document.createElement('p');
+      userP.className = 'msg user';
+      userP.textContent = 'You: ' + q;
+      chatWindow.appendChild(userP);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+
+      const res = await fetch('/admin/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: q })
+      });
+      const data = await res.json();
+
+      const botP = document.createElement('p');
+      botP.className = 'msg bot';
+      botP.textContent = data.success
+        ? 'Bot: ' + data.answer
+        : 'Bot: error';
+      chatWindow.appendChild(botP);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+
+      document.getElementById('question').value = '';
+    });
+  </script>
+</body>
+</html>
