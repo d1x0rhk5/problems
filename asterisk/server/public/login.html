@@ -1,0 +1,32 @@
+<!doctype html><html lang="ko"><head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Login</title>
+<style>
+body{font-family:system-ui;-apple-system:system-ui;margin:0;background:#0b1020;color:#e8ebff}
+main{max-width:720px;margin:10vh auto;padding:24px}
+.card{background:#141a3a;border:1px solid #222a5a;border-radius:14px;padding:24px}
+input{width:100%;background:#0f1430;color:#e8ebff;border:1px solid #29316b;border-radius:10px;padding:10px;margin-bottom:10px}
+button{background:#2a63ff;color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer}
+a{color:#9aa3d9}
+</style></head><body>
+<main class="card">
+  <h2>Login</h2>
+  <input id="uname" placeholder="username" />
+  <input id="pwd" type="password" placeholder="password" />
+  <button id="login">Login</button>
+  <p style="margin-top:10px">Don't have an account yet? <a href="/signup.html">Sign Up</a></p>
+  <p id="msg"></p>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+const api=(p,opt={})=>fetch(p,{headers:{'Content-Type':'application/json'},...opt}).then(async r=>{const d=await r.json(); if(!r.ok) throw d; return d;});
+$('#login').onclick = async ()=>{
+  $('#msg').textContent='';
+  try{
+    const username=$('#uname').value.trim(), password=$('#pwd').value;
+    await api('/login',{method:'POST',body:JSON.stringify({username,password})});
+    location.href='/app.html';
+  }catch(e){ $('#msg').textContent=e?.error||'Login failed'; }
+};
+</script>
+</body></html>

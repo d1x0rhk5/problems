@@ -1,0 +1,130 @@
+<!doctype html><html lang="ko"><head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Judge App</title>
+<style>
+body{font-family:system-ui;-apple-system:system-ui;margin:0;background:#0b1020;color:#e8ebff}
+header{padding:16px 20px;background:#121735;border-bottom:1px solid #222a5a}
+main{padding:20px;max-width:1100px;margin:0 auto}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card{background:#141a3a;border:1px solid #222a5a;border-radius:14px}
+.card h3{margin:0;padding:14px 16px;border-bottom:1px solid #222a5a;font-size:16px;color:#b6c0ff}
+.card .content{padding:16px}
+textarea,input[type=text]{width:100%;background:#0f1430;color:#e8ebff;border:1px solid #29316b;border-radius:10px;padding:10px;font-family:ui-monospace,Consolas,Menlo,monospace}
+textarea{min-height:200px}
+.btn{appearance:none;background:#2a63ff;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:600;cursor:pointer}
+.btn.secondary{background:#33407a}
+.pre{white-space:pre-wrap;word-break:break-word;background:#0f1430;border:1px solid #29316b;border-radius:10px;padding:12px}
+.stack{display:flex;gap:10px;flex-wrap:wrap}
+.muted{color:#9aa3d9}
+</style></head><body>
+<header>
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <strong>print Asterisk</strong>
+    <div><span id="who" class="muted"></span> <button id="logout" class="btn secondary" style="margin-left:8px">logout</button></div>
+    <button id="deleteAccount" class="btn secondary" style="margin-left:8px">Account deletion</button>
+  </div>
+</header>
+<main>
+  <div class="row">
+    <div class="card">
+      <h3>① Submit Code</h3>
+      <div class="content">
+        <textarea id="code"></textarea>
+        <div class="stack" style="margin-top:10px">
+          <input id="input" type="text" placeholder="Input value (e.g., 5)" />
+          <button class="btn" id="submit">Run</button>
+          <button class="btn secondary" id="save">Save</button>
+        </div>
+        <p class="muted">Language: <code>input n</code>, <code>for i in 1..n</code>, <code>print "*" * i</code></p>
+        <pre id="run" class="pre"></pre>
+      </div>
+    </div>
+    <div class="card">
+      <h3>② 1~99 Evaluation & FLAG</h3>
+      <div class="content">
+        <div class="stack">
+          <button id="judgeAll" class="btn">1~99 Evaluation</button>
+          <button id="getFlag" class="btn secondary" disabled>FLAG</button>
+        </div>
+        <pre id="judgeAllArea" class="pre"></pre>
+        <pre id="flagArea" class="pre"></pre>
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+const api=(p,opt={})=>fetch(p,{headers:{'Content-Type':'application/json'},credentials:'same-origin',...opt})
+  .then(async r=>{const d=await r.json(); if(!r.ok) throw d; return d;});
+
+async function ensureAuthed(){
+  try{
+    const r = await api('/me');
+    if(!r.user){ location.href='/login.html'; return; }
+    $('#who').textContent = `login: ${r.user.username}`;
+    
+    const c = await api('/mycode');
+    if (c.ok && typeof c.code === 'string') {
+      $('#code').value = c.code;
+    }
+  }catch{ location.href='/login.html'; }
+}
+
+$('#logout').onclick = async ()=>{ try{ await api('/logout',{method:'POST'}); location.href='/login.html'; }catch{} };
+
+$('#deleteAccount').onclick = async () => {
+  if (!confirm("Are you sure you want to delete your account?")) return;
+  try {
+    const r = await api('/delete-account', { method: 'POST' });
+    if (r.ok) {
+      alert("Your account has been deleted.");
+      location.href = '/login.html'; 
+    } else {
+      alert("Deletion failed: " + (r.error || "Unknown error"));
+    }
+  } catch (e) {
+    alert("Error: " + (e?.error || JSON.stringify(e)));
+  }
+};
+
+
+$('#save').onclick = async ()=>{
+  try{
+    const r = await api('/save',{method:'POST',body:JSON.stringify({code:$('#code').value})});
+    alert(`Saved: ${r.path}`);
+  }catch(e){ alert(e?.error||'Save failed (check /bin permissions)'); }
+};
+
+$('#submit').onclick = async ()=>{
+  $('#run').textContent='';
+  try{
+    const r = await api('/submit',{method:'POST',body:JSON.stringify({code:$('#code').value,input:$('#input').value})});
+    $('#run').textContent = `exit: ${r.exitCode}\n\nstdout:\n${r.stdout}`;
+  }catch(e){ $('#run').textContent='Error: '+(e?.error||JSON.stringify(e)); }
+};
+
+$('#judgeAll').onclick = async ()=>{
+  $('#judgeAllArea').textContent='Checking...';
+  $('#getFlag').disabled = true;
+  try{
+    const r = await api('/judge-all',{method:'POST',body:JSON.stringify({code:$('#code').value})});
+    $('#judgeAllArea').textContent = `allPassed=${r.allPassed}`;
+    if (r.allPassed) $('#getFlag').disabled = false;
+  }catch(e){
+    $('#judgeAllArea').textContent='Error: '+(e?.error||JSON.stringify(e));
+  }
+};
+
+$('#getFlag').onclick = async ()=>{
+  $('#flagArea').textContent='';
+  try{
+    const r = await api('/flag');
+    $('#flagArea').textContent = r.ok ? `FLAG: ${r.flag}` : (r.error || 'Permission denied');
+  }catch(e){
+    $('#flagArea').textContent='Error: '+(e?.error||JSON.stringify(e));
+  }
+};
+
+ensureAuthed();
+</script>
+</body></html>
